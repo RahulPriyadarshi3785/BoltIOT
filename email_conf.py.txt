@@ -1,0 +1,6 @@
+MAILGUN_API_KEY  =  "key-5532108447b12f31ada35a70f1998dc7"
+SANDBOX_URL = "sandbox7b57cb91de854e15aa1621eaaef549f0.mailgun.org"
+SENDER_EMAIL  = "test@sandbox7b57cb91de854e15aa1621eaaef549f0.mailgun.org"
+RECIPIENT_EMAIL  = "rahulpriyadarshi3785@gmail.com"
+API_KEY  = "625d51c0-092f-48b8-89e1-fc688fd35c68"
+DEVICE_ID  = "BOLT3730582"

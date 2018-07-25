@@ -1,0 +1,29 @@
+import tweepy
+import conf
+
+    # Dictionary to store credentials as key-value pairs.
+config = {
+"consumer_key"        : conf.consumer_key,
+"consumer_secret"     : conf.consumer_secret,
+"access_token"        : conf.access_token,
+"access_token_secret" : conf.access_token_secret
+}
+
+# Method to authenticate user via Tweepy and return API object
+def get_api_object(cfg):
+    auth =tweepy.OAuthHandler(cfg['consumer_key'],
+                                  cfg['consumer_secret'])
+    auth.set_access_token(cfg['access_token'],
+                              cfg['access_token_secret'])
+    return tweepy.API(auth)
+
+# Call get_api_object to authenticate user and get the API object
+api_object = get_api_object(config)
+
+# Store the tweet message in the variable
+tweet = "Hello, World! From Tweeter App Api"
+
+# Post the tweet on your Twitter account using the update_status method.
+status = api_object.update_status(status=tweet)
+
+

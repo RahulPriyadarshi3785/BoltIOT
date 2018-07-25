@@ -1,0 +1,1240 @@
+ var offset; 
+    predicted_history=[];
+    var xVariable = "";
+    var yVariable  ="";
+    var frame_size_input;
+    var no_polynomial_coefficient_input;
+    var predicted_points_input;
+    var XDATA =[];
+    var YDATA = [];
+    var PREDICTION = false;
+    var FRAME_SIZE_MIN = 3;
+    var FRAME_SIZE_MAX = 50;
+    var PREDICTED_POINTS_MIN = 1;
+    var PREDICTED_POINTS_MAX = 10;
+    var NO_POLYNOMIAL_COEFFICIENT_MIN = 2;
+    var NO_POLYNOMIAL_COEFFICIENT_MAX = 30;
+
+    function setChartLibrary(chartTye){
+        // function to initlize differeent graph libraries in future.
+    }
+    var formatter;
+     function setNumberFormatter(type){
+        formatter = type;
+        //alert(formatter)
+    }
+    function numberFormatter(formatter1){
+      //  console.log(formatter1);
+         switch (formatter1) {
+            case 'decimal':
+            var formatter = new google.visualization.NumberFormat({pattern:'###,###'});
+            return formatter;
+            break;
+
+            case 'scientific':
+            var formatter = new google.visualization.NumberFormat({pattern:'0.0E00'});
+            return formatter;
+            break;
+
+            case 'percentage':
+            var formatter = new google.visualization.NumberFormat({pattern:'#%'});
+            return formatter;
+            break;
+
+            case 'currencyInDollar':
+            var formatter = new google.visualization.NumberFormat({pattern:'#$'});
+            return formatter;
+            break;
+
+            case 'currencyInRupees':
+            var formatter = new google.visualization.NumberFormat({pattern:'Rs '});
+            return formatter;
+            break;
+
+            case 'short':
+            var formatter = new google.visualization.NumberFormat({pattern:'short'});
+            return formatter;
+            break;
+
+            case 'long':
+            var formatter = new google.visualization.NumberFormat({pattern:'long'});
+            return formatter;
+            break;
+
+            default:
+            console.log("default formatter is applied");
+            var formatter = new google.visualization.NumberFormat({pattern:'long'});
+            return formatter;
+        }
+       
+    }
+
+    var dateformatter;
+     function setDateFormatter(dateFormat){
+        dateformatter = dateFormat;
+        //alert(formatter)
+    }
+
+    function dateFormatterMain(dateformat){
+        switch (dateformat) {
+            case 'dd/mm/yyyy':
+            console.log("inside dd/mm/yyyy")
+            var formatter = new google.visualization.DateFormat({pattern: 'dd/MM/yyyy HH:mm a'});
+            return formatter;
+            break;
+
+            case 'mm/dd/yyyy':
+            var formatter = new google.visualization.DateFormat({pattern: 'MM/dd/yyyy HH:mm a'});
+            return formatter;
+            break;
+
+            default:
+            console.log("default  date formatter is applied");
+            var formatter = new google.visualization.DateFormat({formatType: 'medium'});
+            return formatter;
+        }
+    }
+    var crosshair="false"
+    function setCrosshair(crosshair_status){
+        if(crosshair_status==true){
+            crosshair = "both"
+        }
+
+    }
+    
+  function  setChartTitle(title){
+    $('#graph_title').html(title)
+    }
+    function drawChart(chartType) {
+        /*xVariable = xVariableName;
+        yVariable = yVariableName;
+        console.log(xVariable);
+        if (xVariable === undefined || yVariable === undefined){
+            console.log("inside if");
+            xVariable = x_axis;
+            yVariable = y_axis;
+        }
+        else{
+
+        } */
+        google.charts.load('current', {
+            packages: ['corechart', setPackages(chartType)]
+        });
+        if (chartType == 'lineGraph') {
+            google.charts.setOnLoadCallback(drawLine);
+        } 
+        else if (chartType == 'barGraph') {
+            google.charts.setOnLoadCallback(drawBar);
+        } 
+        else if (chartType == 'scatterGraph') {
+            google.charts.setOnLoadCallback(drawScatter);
+        }
+        else if (chartType == 'areaGraph') {
+            console.log('areaGraph')
+            google.charts.setOnLoadCallback(drawArea);
+        }
+         else if (chartType == 'tableGraph') {
+            google.charts.setOnLoadCallback(drawTable);
+        }
+        else if (chartType == 'steppedGraph') {
+            google.charts.setOnLoadCallback(drawSteppedArea);
+        }
+        else if (chartType == 'histogramGraph') {
+            google.charts.setOnLoadCallback(drawHistogram);
+        }
+        else if (chartType == 'gauge') {
+            google.charts.setOnLoadCallback(drawGauge);
+        }
+        else if(chartType == 'predictionGraph'){
+            $('.ml_prediction_row').show();
+            $('#predict').show();
+            $('#data_filter').hide();
+            google.charts.setOnLoadCallback(drawPredictionGraph);
+        }
+    }
+
+    var setanimation = true;
+    function setAnimation(flag){
+        if(flag == true ){
+            setanimation = true;
+        }
+        else{
+            setanimation = false;
+        }
+    }
+
+    function setGoogleAnimation(options){
+        if(setanimation == true){
+            console.log("inside the animation");
+            var myobj=new Object();
+            myobj= {'startup': true,duration: 2000,easing: 'out'};
+        Object.defineProperty(options,'animation',{value :myobj ,
+            writable : true,
+            enumerable : true,
+            configurable : true});
+    }
+    return options;
+}
+
+    function drawGauge() {
+    var chart = new google.visualization.Gauge(document.getElementById('chart_div'));
+        /* Code for ajax */
+        //duration = $("#dayBasedGraph option:selected").val();
+        duration = "day";
+        var data = google.visualization.arrayToDataTable([['Label', 'Value']]);
+      $.ajax({
+                type: 'GET',
+                url: '/fetchFromTable?fields='+gaugeField+'&duration='+duration+'&deviceName='+device_name,
+                contentType: false,
+                processData: false,
+                dataType: 'json',
+                success: function(response) {
+                    data = addData(data, response ,"gauge");
+                    optionGauge = setGoogleAnimation(optionGauge);
+                    console.log(optionGauge)
+                    chart.draw(data, optionGauge);
+                }
+            })
+              /*Ending of ajax*/
+            $(document).on('click', '#filter', function (event) {
+               // console.log(optionGauge)
+                from = $('#from').val();
+                to = $('#to').val();
+                if (from == "" || to == ""){
+                    $.notify("Please select the date range.", { elementPosition: 'bottom left',
+                        globalPosition: 'top right',autoHide: true},"warn");
+                }
+                else{
+               var myresponse = fetchTimeIntervalData("gauge");
+               console.log("myresponse");
+               console.log(myresponse);
+                dataBasedOnDate = addData(data, myresponse,"gauge");
+                console.log("dataBasedOnDate");
+                console.log(dataBasedOnDate);
+               // chart.clearChart();
+                chart.draw(dataBasedOnDate, optionGauge);
+            }
+            });
+
+            /*Updating data onclick event*/
+            $(document).on('change', '#dayBasedGraph', function (event) {
+                $("#from").val("");
+                $("#to").val("");
+               var myresponse = fetchTimeIntervalData("gauge");
+               console.log(myresponse)
+                dataBasedOnDate = addData(data, myresponse,"gauge");
+                console.log(dataBasedOnDate);
+                //chart.clearChart();
+                chart.draw(dataBasedOnDate, optionGauge);
+            });
+            setTimeout(function(){drawGauge()}, 18000);
+
+    }
+
+    function drawLine() {
+        var data = new google.visualization.DataTable();
+        data.addColumn('datetime', x_axis);
+        data.addColumn('number', y_axis);
+        var options = {
+            backgroundColor: { fill:'transparent' },
+            hAxis: {
+                title: x_axis
+            },
+            vAxis: {
+                title: y_axis
+            },
+            chartArea:{left:'5%',top:'10%',width:'90%',height:'70%'},
+            lineWidth: 3,
+            pointSize:4,
+            colors: ['#243D87'],
+            legend: {position:'top',alignment: 'center'},
+            crosshair: { trigger: crosshair,color: "#999999" },
+            animation:{}
+            
+        };
+      //  options['timeZone'] = 10
+        options = setGoogleAnimation(options);
+        var chart = new google.visualization.LineChart(document.getElementById('chart_div'));
+        /* Code for ajax */
+        duration = $("#dayBasedGraph option:selected").val();
+        console.log(duration);
+        $.ajax({
+                type: 'GET',
+                url: '/fetchFromTable?fields='+xVariable+','+yVariable+'&duration='+duration+'&deviceName='+device_name,
+                contentType: false,
+                processData: false,
+                success: function(response) {
+                    data = addData(data, response,"line");
+                    options = setGoogleAnimation(options);
+                    chart.draw(data, options);
+                }
+            });
+            /*Ending of ajax*/
+
+            $(document).on('click', '#filter', function (event) {
+                from = $('#from').val();
+                to = $('#to').val();
+              //  alert(from)
+                if (from == "" || to == ""){
+                    $.notify("Please select the date range.", { elementPosition: 'bottom left',
+                        globalPosition: 'top right',autoHide: true},"warn");
+                }
+                else{
+               var myresponse = fetchTimeIntervalData();
+               console.log(myresponse)
+                dataBasedOnDate = addData(data, myresponse,"line");
+                console.log(dataBasedOnDate);
+                chart.clearChart();
+                chart.draw(dataBasedOnDate, options);
+            }
+            });
+
+            /*Updating data onclick event*/
+            $(document).on('change', '#dayBasedGraph', function (event) {
+                $("#from").val("");
+                $("#to").val("");
+               var myresponse = fetchTimeIntervalData();
+               console.log(myresponse)
+                dataBasedOnDate = addData(data, myresponse,"line");
+                console.log(dataBasedOnDate);
+                chart.clearChart();
+                chart.draw(dataBasedOnDate, options);
+            });
+            setTimeout(function(){drawLine()}, 18000);
+    }
+
+
+    // function to draw prediction graph
+    function drawPredictionGraph() {
+    	setanimation = false;
+        var data = new google.visualization.DataTable();
+        data.addColumn('datetime', x_axis);
+        data.addColumn('number', y_axis);
+        var options = {
+            backgroundColor: {
+                fill: 'transparent'
+            },
+            hAxis: {
+                title: x_axis
+            },
+            vAxis: {
+                title: y_axis
+            },
+            chartArea: {
+                left: '5%',
+                top: '10%',
+                width: '90%',
+                height: '70%'
+            },
+            lineWidth: 3,
+            pointSize: 4,
+            colors: ['#243D87'],
+            legend: {
+                position: 'top',
+                alignment: 'center'
+            },
+            crosshair: {
+                trigger: crosshair,
+                color: "#999999"
+            },
+            animation: {}
+
+        };
+        //  options['timeZone'] = 10
+        options = setGoogleAnimation(options);
+        var chart = new google.visualization.LineChart(document.getElementById('chart_div'));
+        /* Code for ajax */
+        duration = $("#dayBasedGraph option:selected").val();
+        XDATA = []
+        YDATA = []
+        $.ajax({
+            type: 'GET',
+            url: '/fetchFromTable?fields=' + xVariable + ',' + yVariable + '&duration=six_hours&deviceName=' + device_name,
+            contentType: false,
+            processData: false,
+            success: function(response) {
+                for (i = 0; i < response.data.length; i++) {
+                    var d = Date.parse(response['data'][i][0]);
+                    var excel = (d / 8640000) + 25568
+                    XDATA.push(excel)
+                    YDATA.push(Number(response.data[i][1]))
+                }
+                console.log('XDATA', XDATA.length)
+                console.log('YDATA', YDATA)
+                data = addData(data, response, "line");
+                options = setGoogleAnimation(options);
+                chart.draw(data, options);
+                if (PREDICTION) {
+                    redrawPrediction();
+                }
+            }
+        });
+        /*Ending of ajax*/
+        setTimeout(function() {
+            drawPredictionGraph()
+        }, 18000);
+    }
+
+    function addData(data , response, chartType){
+        var data_counts = response.data.length;
+        if (data_counts != 0){
+         $('#data_counts').html(data_counts)
+        }
+        else{
+            $('#data_counts').html("No data has been collected.")
+        }
+
+        if(chartType == "gauge")
+        {
+            console.log("inside gauge addData")
+            var latest_data_packet = response.data[response.data.length-1][0];
+            var data = google.visualization.arrayToDataTable([
+                    ['Label', 'Value'],
+                    [gaugeField, (Number(latest_data_packet)+ Number(ADD) ) * Number(MUL)]
+                    ]);
+        var numformatter = numberFormatter(formatter);
+        numformatter.format(data, 1);
+        console.log(data)
+            return data;
+
+        }
+        if(chartType == "histogram"){
+            for (var i = 0; i < response.data.length; i++) {
+                        if (response.data[i][1] !== null) {
+                            var temp=[];
+                            temp.push(new Date(response.data[i][0]).toString());
+                            dates = new Date(response.data[i][0]);
+                            temp.push(   (Number(response.data[i][1]) + Number(ADD) ) * Number(MUL)  );
+                            data.push(temp);
+                        }
+                    }
+                    var data = new google.visualization.arrayToDataTable(data);
+                    var numformatter = numberFormatter(formatter);
+                     numformatter.format(data, 1);
+                     var dateFormatter1 = dateFormatterMain(dateformatter);
+                    dateFormatter1.format(data, 0);
+
+                    return data;
+        }
+
+        if(chartType == "stepped"){
+           // var numberofrows= data.getNumberOfRows();
+            //console.log("numberofrows in stepped"+ numberofrows )
+            //console.log(data.removeRows(1,numberofrows));
+             for (var i = 0; i < response.data.length; i++) {
+                        if (response.data[i][1] !== null) {
+                            var temp=[];
+                            temp.push(new Date(response.data[i][0]));
+                            temp.push(Number(response.data[i][1]));
+                            temp.push(Number(response.data[i][2]));
+                            data.push(temp);
+                        }
+                    }
+                    if(response.data.length == 0){
+                        var temp=[];
+                            temp.push(new Date(2014, 10, 15, 0, 30));
+                            temp.push(Number(0));
+                            temp.push(Number(0));
+                            data.push(temp);
+                            var temp=[];
+                            temp.push(new Date(2014, 10, 15, 0, 30));
+                            temp.push(Number(0));
+                            temp.push(Number(0));
+                            data.push(temp);
+                    } 
+                    var data = new google.visualization.arrayToDataTable(data);
+                    var numformatter = numberFormatter(formatter);
+                     numformatter.format(data, 1);
+                     var dateFormatter1 = dateFormatterMain(dateformatter);
+                    dateFormatter1.format(data, 0);
+                    return data;
+        }
+        var numberofrows= data.getNumberOfRows();
+        console.log("numberofrows of row is"+data.removeRows(0,numberofrows));
+        for (var i = 0; i < response.data.length; i++) {
+            if (response.data[i][1] !== null) {
+                data.addRows([
+                    [new Date(response.data[i][0]), (Number(response.data[i][1])+ Number(ADD) ) * Number(MUL) ]
+                    ]);
+            }
+        }
+        /*This line is for table*/
+        if (baseValue != "" )
+        {
+            var formatter1 = new google.visualization.ArrowFormat({base:baseValue});
+            formatter1.format(data, 1);
+        } 
+        /* Ending of table code*/
+
+        var numformatter = numberFormatter(formatter);
+        numformatter.format(data, 1);
+        var dateFormatter1 = dateFormatterMain(dateformatter)
+        dateFormatter1.format(data, 0);
+        console.log(data)
+       // data.removeRow();
+        return data;
+    }
+
+    function drawBar() {
+
+        var data = new google.visualization.DataTable();
+        var formatter = new google.visualization.DateFormat({pattern: 'h:mm '});
+        data.addColumn('datetime', x_axis);
+        data.addColumn('number', y_axis);
+        var options = {
+        hAxis: {
+          title: x_axis
+        },
+        backgroundColor: { fill:'transparent' },
+        colors: ['#243d87'],
+        vAxis: {
+          title: y_axis        },
+          crosshair: { trigger: crosshair,color: "#25a55f" },
+          animation:{},
+          pointSize:4
+      };
+        var chart = new google.visualization.ColumnChart(
+            document.getElementById('chart_div'));
+        /* Code for ajax */
+        duration = $("#dayBasedGraph option:selected").val();
+        $.ajax({
+                type: 'GET',
+                url: '/fetchFromTable?fields='+xVariable+','+yVariable+'&duration='+duration+'&deviceName='+device_name,
+                contentType: false,
+                processData: false,
+                dataType: 'json',
+               success: function(response) {
+                    data = addData(data, response, "bar");
+                    options = setGoogleAnimation(options);
+                    chart.draw(data, options);
+                }
+            });
+             /*Ending of ajax*/
+            $(document).on('click', '#filter', function (event) {
+                from = $('#from').val();
+                to = $('#to').val();
+                if (from == "" || to == ""){
+                    $.notify("Please select the date range.", { elementPosition: 'bottom left',
+                        globalPosition: 'top right',autoHide: true},"warn");
+                }
+                else{
+               var myresponse = fetchTimeIntervalData();
+               console.log(myresponse)
+                dataBasedOnDate = addData(data, myresponse,"bar");
+                console.log(dataBasedOnDate);
+                chart.clearChart();
+                chart.draw(dataBasedOnDate, options);
+            }
+            });
+            /*Updating data onclick event*/
+            $(document).on('change', '#dayBasedGraph', function (event) {
+                $("#from").val("");
+                $("#to").val("");
+               var myresponse = fetchTimeIntervalData();
+               console.log(myresponse)
+                dataBasedOnDate = addData(data, myresponse,"bar");
+                console.log(dataBasedOnDate);
+                chart.clearChart();
+                chart.draw(dataBasedOnDate, options);
+            });
+
+        setTimeout(function(){drawBar()}, 18000);
+        //chart.draw(data, options);
+    }
+
+    function drawScatter() {
+        var data = new google.visualization.DataTable();
+        data.addColumn('datetime', x_axis);
+        data.addColumn('number', y_axis);
+
+            // Create and draw the visualization.
+        var chart = new google.visualization.ScatterChart(
+            document.getElementById('chart_div'));
+        var options = {
+                        width: '100%',
+                        height: '100%',
+                        vAxis: {
+                            title: y_axis
+                        },
+                        backgroundColor: { fill:'transparent' },
+                        colors: ['#243D87'],
+                        hAxis: {
+                            title: x_axis
+                        },
+                        crosshair: { trigger: crosshair,color: "#25a55f" },
+                        animation:{},
+                        pointSize:4
+                    };
+        duration = $("#dayBasedGraph option:selected").val();
+        /* Code for ajax */
+        $.ajax({
+                type: 'GET',
+             //   url: '/fetch_data_sync?fields=a1&duration=six_hours&deviceName=BOLT9161822&to=2016-05-05&from=2016-07-19',
+                url: '/fetchFromTable?fields='+xVariable+','+yVariable+'&duration='+duration+'&deviceName='+device_name,
+                contentType: false,
+                processData: false,
+                dataType: 'json',
+                success: function(response) {
+                    data = addData(data, response,"scatter");
+                    options = setGoogleAnimation(options);
+                    chart.draw(data, options);
+                }
+            });
+            /*Ending of ajax*/
+            $(document).on('click', '#filter', function (event) {
+                from = $('#from').val();
+                to = $('#to').val();
+                if (from == "" || to == ""){
+                    $.notify("Please select the date range.", { elementPosition: 'bottom left',
+                        globalPosition: 'top right',autoHide: true},"warn");
+                }
+                else{
+               var myresponse = fetchTimeIntervalData();
+               console.log(myresponse)
+                dataBasedOnDate = addData(data, myresponse,"scatter");
+                console.log(dataBasedOnDate);
+                chart.clearChart();
+                chart.draw(dataBasedOnDate, options);
+            }
+            });
+
+            /*Updating data onclick event*/
+            $(document).on('change', '#dayBasedGraph', function (event) {
+                $("#from").val("");
+                $("#to").val("");
+               var myresponse = fetchTimeIntervalData();
+               console.log(myresponse)
+                dataBasedOnDate = addData(data, myresponse,"scatter");
+                console.log(dataBasedOnDate);
+                chart.clearChart();
+                chart.draw(dataBasedOnDate, options);
+            });
+            /*Ending of ajax*/
+            setTimeout(function(){drawScatter()}, 18000);
+
+    }
+
+    var x_axis, y_axis, chartType="tableGraph";
+    var  gaugeField, optionGauge = {};
+    var z_axis;
+    optionGauge['height'] = 400;
+    optionGauge['width'] = 400;
+
+     function setMaxValue (MaxValue){
+        optionGauge['max'] = MaxValue;
+    }
+    function setRed(redFrom, redTo){
+        optionGauge['redFrom'] = redFrom;
+        optionGauge['redTo'] = redTo;
+       // console.log("set red" +redFromvalue);
+    }
+    function setDimensions(width,height){
+        optionGauge['height'] = height;
+        optionGauge['width'] = width;
+    }
+    function setYellow(yellowFromValue, yellowToValue){
+        optionGauge['yellowFrom'] = yellowFromValue;
+        optionGauge['yellowTo'] = yellowToValue;
+
+
+    }
+    function setGreen(greenFromValue, greenToValue){
+        optionGauge['greenFrom'] = greenFromValue;
+        optionGauge['greenTo'] = greenToValue;
+    }
+
+    function setMinorTicks (setMinorTicksValue){
+        optionGauge['minorTicks'] = setMinorTicksValue;
+
+    }
+
+    function dataDownload(flag){
+        if(flag == "true"){
+            document.getElementById("dataDownload").style.display = "block";
+        }
+        else{
+        document.getElementById("dataDownload").style.display = "none";
+    }
+
+    }
+    function setChartType(chart_type) {
+        chartType = chart_type;
+        //drawChart(chartType)
+    }
+    var z_axis = ""
+    function setAxisName(x_Axis, y_Axis, z_Axis) {
+        console.log(arguments.length);
+        if (arguments.length < 2){
+            gaugeField  =  x_Axis;
+        }
+        else if(arguments.length == 3){
+            xVariable = x_Axis
+            yVariable = y_Axis
+            z_axis = z_Axis;
+            console.log(xVariable+yVariable+z_axis)
+        }
+        else
+        {
+            x_axis = x_Axis;
+            y_axis = y_Axis;
+            xVariable = x_Axis
+            yVariable = y_Axis
+        }
+    }
+    function plotChart(xVariableArgs,yVariableArgs,zVariableArgs) {
+        if (arguments.length == 3){
+            xVariable = xVariableArgs
+            yVariable = yVariableArgs
+            z_axis = zVariableArgs;
+
+        }
+        if (arguments.length == 2){
+            xVariable = xVariableArgs
+            yVariable = yVariableArgs
+
+        }
+        
+        drawChart(chartType);
+    }
+    function plotTable(xVariable,yVariable) {
+        // alert(x_Axis)
+        drawChart(chartType,xVariable,yVariable);
+    }
+
+function setPackages(chartType){
+        switch (chartType) {
+            case 'lineGraph':
+            return 'line';
+            break;
+
+            case 'scatterGraph':
+            return 'scatter';
+            break;
+
+            case 'barGraph':
+            return 'bar';
+            break;
+
+            case 'areaGraph':
+            return 'corechart';
+            break;
+
+            case 'tableGraph':
+            return 'table';
+            break;
+
+            case 'steppedGraph':
+            return 'corechart';
+            break;
+
+            case 'histogramGraph':
+            return 'corechart';
+            break;
+
+            case 'gauge':
+            return 'gauge';
+            break;
+
+            case 'predictionGraph':
+            return 'line';
+            break;
+
+            default:
+            console.log("graph type is incorrect");
+            return 'table';
+        }
+    }
+
+
+     function drawArea() {
+        var data = new google.visualization.DataTable();
+        data.addColumn('datetime', x_axis);
+        data.addColumn('number', y_axis);
+        var options = {
+          hAxis: {title: x_axis,  titleTextStyle: {color: '#333'}},
+          vAxis: {title:y_axis,minValue: 0},
+          crosshair: { trigger: crosshair,color: "#25a55f" },
+          animation:{},
+          pointSize:4,
+          backgroundColor: { fill:'transparent' },
+          colors: ['#243D87']
+        };
+        var chart = new google.visualization.AreaChart(document.getElementById('chart_div'));
+        //chart.draw(data, options);
+        duration = $("#dayBasedGraph option:selected").val();
+        $.ajax({
+                type: 'GET',
+                url: '/fetchFromTable?fields='+xVariable+','+yVariable+'&duration='+duration+'&deviceName='+device_name,
+                contentType: false,
+                processData: false,
+                dataType: 'json',
+                success: function(response) {
+                    data = addData(data, response, "area");
+                    options = setGoogleAnimation(options);
+                    chart.draw(data, options);
+                }
+            });
+        /*Updating data onclick event*/
+            $(document).on('click', '#filter', function (event) {
+               var myresponse = fetchTimeIntervalData();
+               console.log(myresponse)
+                dataBasedOnDate = addData(data, myresponse,"area");
+                console.log(dataBasedOnDate);
+                chart.clearChart();
+                chart.draw(dataBasedOnDate, options);
+            });
+
+             /*Updating data onclick event*/
+            $(document).on('change', '#dayBasedGraph', function (event) {
+                $("#from").val("");
+                $("#to").val("");
+               var myresponse = fetchTimeIntervalData();
+               console.log(myresponse)
+                dataBasedOnDate = addData(data, myresponse,"scatter");
+                console.log(dataBasedOnDate);
+                chart.clearChart();
+                chart.draw(dataBasedOnDate, options);
+            });
+            /*closing of filter area*/
+            setTimeout(function(){drawArea()}, 18000);
+
+      }
+
+      var baseValue="";
+      function drawTable() {
+      console.log(numberFormatter(formatter))
+        var data = new google.visualization.DataTable();
+        data.addColumn('datetime', x_axis);
+        data.addColumn('number', y_axis);
+
+        var options = {showRowNumber: true, width: '80%', 
+        height: '80%',crosshair: { trigger: crosshair,color: "#25a55f",
+         },
+         animation:{},
+         pointSize:4
+    };
+        var chart = new google.visualization.Table(document.getElementById('chart_div'));
+
+        //chart.draw(data, options);
+        duration = $("#dayBasedGraph option:selected").val();
+        $.ajax({
+                type: 'GET',
+                url: '/fetchFromTable?fields='+xVariable+','+yVariable+'&duration='+duration+'&deviceName='+device_name,
+                contentType: false,
+                processData: false,
+                dataType: 'json',
+                success: function(response) {
+                    data = addData(data, response,"table");
+                    options = setGoogleAnimation(options);
+                    chart.draw(data, options);
+                }
+            });
+        $(document).on('click', '#filter', function (event) {
+                from = $('#from').val();
+                to = $('#to').val();
+                if (from == "" || to == ""){
+                    $.notify("Please select the date range.", { elementPosition: 'bottom left',
+                        globalPosition: 'top right',autoHide: true},"warn");
+                }
+                else{
+               var myresponse = fetchTimeIntervalData();
+               console.log(myresponse)
+                dataBasedOnDate = addData(data, myresponse,"table");
+                console.log(dataBasedOnDate);
+                chart.clearChart();
+                chart.draw(dataBasedOnDate, options);
+            }
+            });
+
+            /*Updating data onclick event*/
+            $(document).on('change', '#dayBasedGraph', function (event) {
+                $("#from").val("");
+                $("#to").val("");
+               var myresponse = fetchTimeIntervalData();
+               console.log(myresponse)
+                dataBasedOnDate = addData(data, myresponse,"table");
+                console.log(dataBasedOnDate);
+                chart.clearChart();
+                chart.draw(dataBasedOnDate, options);
+            });
+            setTimeout(function(){drawTable()}, 18000);
+      }
+
+      function  setBaseValue(value){
+            baseValue = value ;
+        }
+
+      function drawSteppedArea(){
+        var data = new google.visualization.DataTable();
+        data.addColumn('datetime', x_axis);
+        data.addColumn('number', y_axis);
+        data.addColumn('number', z_axis);
+        console.log("inside stepped"+xVariable+yVariable+z_axis)
+        var options = {
+            backgroundColor: { fill:'transparent' },
+            colors: ['#243D87', '#693A2F', '#F1CA3A', '#E49307'],
+            showRowNumber: true, 
+            width: '80%', 
+            height: '80%',
+            vAxis: {title: 'Values'},
+            isStacked: true,
+            crosshair: { trigger: crosshair,color: "#25a55f" },
+            animation:{},
+            pointSize:4
+        };
+       // data.addRows(["x_axis","y_axis" ,"z_axis" ]);
+        var chart = new google.visualization.SteppedAreaChart(document.getElementById('chart_div'));
+        var realData =[];
+        Header= ['Time',''+yVariable+'', ''+z_axis+''];
+        realData.push(Header);
+        duration = $("#dayBasedGraph option:selected").val();
+        console.log(duration)
+        $.ajax({
+                type: 'GET',
+                url: '/fetchFromTable?fields='+xVariable+','+yVariable+','+z_axis+'&duration='+duration+'&deviceName='+device_name,
+                contentType: false,
+                processData: false,
+                dataType: 'json',
+                success: function(response) {
+                    data = addData(realData, response, "stepped");
+                    options = setGoogleAnimation(options);
+                    chart.draw(data, options);
+                }
+            });
+         /*Updating data onclick event*/
+            $(document).on('click', '#filter', function (event) {
+               numberofrows =  data.getNumberOfRows()
+                data.removeRows(1,numberofrows)
+                numberofrows =  data.getNumberOfRows()
+                realData.splice(1,realData.length)
+               var myresponse = fetchTimeIntervalData("stepped");
+                data = addData(realData, myresponse,"stepped");
+                chart.draw(data, options)
+            });
+
+             /*Updating data onclick event*/
+            $(document).on('change', '#dayBasedGraph', function (event) {
+                $("#from").val("");
+                $("#to").val("");
+                numberofrows =  data.getNumberOfRows()
+                data.removeRows(1,numberofrows)
+                numberofrows =  data.getNumberOfRows()
+                realData.splice(1,realData.length)
+               var myresponse = fetchTimeIntervalData("stepped");
+                data = addData(realData, myresponse,"stepped");
+                chart.draw(data, options);
+            });
+            /*closing of filter area*/
+            setTimeout(function(){drawSteppedArea()}, 18000);
+      }
+
+
+      function drawHistogram(){
+        var data = new google.visualization.DataTable();
+        data.addColumn('datetime', x_axis);
+        data.addColumn('number', y_axis);
+        var options = {
+            backgroundColor: { fill:'transparent' },
+            legend: { position: 'top', maxLines: 2 },
+            colors: ['#243D87', '#1A8763', '#871B47', '#999999'],
+            interpolateNulls: false,
+            crosshair: { trigger: crosshair,color: "#25a55f" },
+            animation:{},
+            pointSize:4
+        };
+        var chart = new google.visualization.Histogram(document.getElementById('chart_div'));
+        var realData =[];
+        Header= ['Time',''+yVariable+''];
+        realData.push(Header);
+        duration = $("#dayBasedGraph option:selected").val();
+        $.ajax({
+                type: 'GET',
+                url: '/fetchFromTable?fields='+xVariable+','+yVariable+'&duration='+duration+'&deviceName='+device_name,
+                contentType: false,
+                processData: false,
+                dataType: 'json',
+                success: function(response) {
+                    data = addData(realData, response, "histogram");
+                    options = setGoogleAnimation(options);
+                    chart.draw(data, options);
+                }
+            });
+         /*Updating data onclick event*/
+            $(document).on('click', '#filter', function (event) {
+               var myresponse = fetchTimeIntervalData("histogram");
+               console.log(myresponse)
+                dataBasedOnDate = addData(realData, myresponse,"histogram");
+                console.log(dataBasedOnDate);
+                chart.draw(dataBasedOnDate, options);
+            });
+
+             /*Updating data onclick event*/
+            $(document).on('change', '#dayBasedGraph', function (event) {
+                $("#from").val("");
+                $("#to").val("");
+               var myresponse = fetchTimeIntervalData("histogram");
+               console.log(myresponse)
+               console.log(data)
+                dataBasedOnDate = addData(realData, myresponse,"histogram");
+                console.log(dataBasedOnDate);
+                chart.draw(dataBasedOnDate, options);
+            });
+            /*closing of filter area*/
+            setTimeout(function(){drawHistogram()}, 18000);
+
+      }
+
+
+  function fetchTimeIntervalData(graphType){
+        from = $('#from').val();
+        to = $('#to').val();
+        duration = $("#dayBasedGraph option:selected").val();
+       // console.log(graphType)
+       url = '/fetchFromTable?fields='+xVariable+','+yVariable+'&duration='+duration+'&deviceName='+device_name+'&from='+from+'&to='+to
+
+       if(graphType== "gauge"){
+        url = '/fetchFromTable?fields='+gaugeField+'&duration='+duration+'&deviceName='+device_name+'&from='+from+'&to='+to;
+       } 
+        if(graphType== "stepped"){
+        url = '/fetchFromTable?fields='+xVariable+','+yVariable+','+z_axis+'&duration='+duration+'&deviceName='+device_name+'&from='+from+'&to='+to;
+       }
+       console.log(url);
+       var responseData=[];
+         $.ajax({
+                async: false ,
+                type: 'GET',
+                url: url,
+                success: function(response) {
+                   responseData = response;
+              //    console.log(responseData)
+                   for(i = 0;i<responseData.data.length;i++){
+                   // console.log(responseData.data[i]);
+                   }
+                   
+                }
+            });
+        // console.log(responseData);
+        return responseData;
+     }
+     var onlineStatus= true;
+     function showOnline(status){
+        onlineStatus = status
+        }
+
+       function fetchDeviceStatus(){
+      $.ajax({
+                type: 'GET',
+                url: '/LastSeen/'+device_name,
+                contentType: false,
+                processData: false,
+                dataType: 'json',
+                success: function(response) {
+		    console.log("this is hte last seen")
+		    console.log(response["date"][0][0])
+		    console.log(response["date"][0][1])
+		    status = response["date"][0][0]
+		    time = response["date"][0][1]
+                    if (status =="offline"){
+                    $('#last_seen').html('Last Seen: '+ time+'')
+                    }
+                    else
+                   $('#last_seen').html('Online');
+                }
+            });
+      setTimeout(function(){fetchDeviceStatus()}, 10000);
+    }
+    if(onlineStatus == true){
+    fetchDeviceStatus();
+}
+
+var ADD= 0 ;
+function add(number){
+    ADD = Number( ADD + number) ; 
+    console.log("ADD is" + ADD)
+}
+
+var MUL=1;
+function mul(number){
+    MUL = Number(MUL*number) ;
+}
+
+$(document).on('click', '#predict', function() {
+    predicted_history = [];
+    frame_size_input = parseInt($('#frame_size_input').val());
+    no_polynomial_coefficient_input = parseInt($('#no_polynomial_coefficient_input').val());
+    predicted_points_input = parseInt($('#predicted_points_input').val());
+    if(validate_settings()){
+    PREDICTION = true;
+    var data = {
+        data: JSON.stringify({
+            "device_id": device_id,
+            "product_name": product_type,
+            "frame_size": frame_size_input,
+            "no_polynomial_coef": no_polynomial_coefficient_input,
+            "predicted_point": predicted_points_input
+        })
+    }
+    console.log(data);
+    $.ajax({
+        type: 'POST',
+        url: '/polyfit',
+        data: data,
+        success: function(data) {
+            console.log(data)
+            console.log(data['success'])
+        }
+    })
+    redrawPrediction();
+}
+});
+
+function PolyFitThis(subx, suby, depth, prediction_number, interval) {
+    z = numpy.polyfit(subx, suby, depth);
+    output_subx = subx.slice(subx.length - 1, subx.length);
+    output_suby = suby.slice(suby.length - 1, suby.length);
+    current_time = subx[subx.length - 1];
+    output = [];
+    for (var j = 0; j < prediction_number; j++) {
+        current_time = current_time + interval;
+        var current_value = 0;
+        for (var k = 0; k < z.length; k++) {
+            current_value = current_value * current_time;
+            current_value = current_value + z[k];
+        }
+        output_data = [current_time, current_value];
+        output.push(output_data);
+    }
+    return output;
+}
+
+function predict() {
+    frame_size_input = parseInt(frame_size_input);
+    no_polynomial_coefficient_input = parseInt(no_polynomial_coefficient_input)
+    predicted_points_input = parseInt(predicted_points_input)
+    frame_size_input = parseInt($('#frame_size_input').val());
+    no_polynomial_coefficient_input = parseInt($('#no_polynomial_coefficient_input').val());
+    predicted_points_input = parseInt($('#predicted_points_input').val());
+    if(validate_settings()){
+    total_no_sample = XDATA.length; // this is n
+    diff_totalsample_framesize = total_no_sample - frame_size_input; // this variable stored the value of n-r i.e offset
+    legend = [
+        ['Time', 'Actual', 'Predict History', 'Predicted']
+    ];
+
+    if (diff_totalsample_framesize < 0) { // this ensures that there is enough data to do a predicton.
+        for (var i = 0; i < XDATA.length; i++) {
+            legend.push([exceltojs(XDATA[i]), YDATA[i], null, null]); //push only actual data into the printable area.
+        }
+        return google.visualization.arrayToDataTable(legend);
+    }
+    predicted_data = PolyFitThis(XDATA.slice(diff_totalsample_framesize, total_no_sample), YDATA.slice(diff_totalsample_framesize, total_no_sample), no_polynomial_coefficient_input, predicted_points_input, 0.0347); //This variable stores all predicted data points in it
+    total_length = XDATA.length + predicted_points_input;
+    console.log("XDATA length " + XDATA.length)
+    console.log("frame_size_input " + frame_size_input)
+    console.log("predicted_points_input " + predicted_points_input);
+    console.log("no_polynomial_coefficient_input " + no_polynomial_coefficient_input)
+    console.log("Total length " + total_length)
+    console.log("data1 " + predicted_data)
+    for (iterator = 0; iterator < total_length; iterator++) {
+        var slice_start = iterator - frame_size_input;
+        var slice_end = iterator;
+        if (iterator < frame_size_input - 1) {
+            legend.push([exceltojs(XDATA[iterator]), YDATA[iterator], null, null]); //push only actual data into the printable area.
+        } else if (iterator < XDATA.length - 1) {
+            next_2_data = PolyFitThis(XDATA.slice(slice_start, slice_end), YDATA.slice(slice_start, slice_end), no_polynomial_coefficient_input, 2, XDATA[iterator] - XDATA[iterator - 1]);
+            // console.log("iterator "+iterator+" data2[0][0]= "+data2[0][0]+" XDATA[iterator]="+XDATA[iterator]);
+            legend.push([exceltojs(XDATA[iterator]), YDATA[iterator], next_2_data[0][1], null]); //push actual data with prediction history
+        } else if (iterator == (XDATA.length - 1)) {
+            console.log("thie diff value is " + diff_totalsample_framesize)
+            if (diff_totalsample_framesize != 0) {
+                next_2_data = PolyFitThis(XDATA.slice(slice_start, slice_end), YDATA.slice(slice_start, slice_end), no_polynomial_coefficient_input, 2, XDATA[iterator] - XDATA[iterator - 1]);
+            } else {
+                next_2_data = [
+                    [null, YDATA[iterator]]
+                ];
+            }
+            legend.push([exceltojs(XDATA[iterator]), YDATA[iterator], next_2_data[0][1], YDATA[iterator]]); //push actual data with prediction history, and latest actual data as predicted data.
+            //The latest actual data is added to the predicted data line to allow the predicted data line to continue from the current data.
+        } else {
+            legend.push([exceltojs(predicted_data[iterator - XDATA.length][0]), null, null, predicted_data[iterator - XDATA.length][1]]);
+        }
+    }
+    var predicted_data = google.visualization.arrayToDataTable(legend);
+    return predicted_data
+}
+}
+
+function exceltojs(exceldate) {
+    return new Date((exceldate - 25568) * 8640000)
+}
+
+function showError(elem) {
+    $('#' + elem).show();
+    setTimeout(function() {
+        $('#' + elem).hide();
+    }, 3000);
+}
+
+function redrawPrediction() {
+	predict_data = predict();
+    var options = {
+        backgroundColor: {
+            fill: 'transparent'
+        },
+        hAxis: {
+            title: 'Time'
+        },
+        vAxis: {
+            title: ''
+        },
+        chartArea: {
+            left: '5%',
+            top: '10%',
+            width: '90%',
+            height: '70%'
+        },
+        lineWidth: 3,
+        pointSize: 4,
+        legend: {
+            position: 'top',
+            alignment: 'center'
+        },
+        crosshair: {
+            trigger: crosshair,
+            color: "#999999"
+        },
+        animation: {}
+
+    };
+    var chart = new google.visualization.LineChart(document.getElementById('chart_div'));
+    options = setGoogleAnimation(options);
+    chart.draw(predict_data, options);
+}
+
+function validate_settings(){
+	if (frame_size_input < FRAME_SIZE_MIN || frame_size_input > FRAME_SIZE_MAX) {
+        showError('frame_size_warning');
+        return false;
+    }
+    if (no_polynomial_coefficient_input < NO_POLYNOMIAL_COEFFICIENT_MIN || no_polynomial_coefficient_input > NO_POLYNOMIAL_COEFFICIENT_MAX) {
+        showError('no_polynomial_coefficient_warning');
+        return false;
+    }
+    if (predicted_points_input < PREDICTED_POINTS_MIN || predicted_points_input > PREDICTED_POINTS_MAX) {
+        showError('predicted_points_warning');
+        return false;
+    }
+    //frame size should be less than data count. If greater than throw error
+    if(frame_size_input > XDATA.length){
+    	showError('min_frame_size_warning')
+    return false;
+    }
+    return true;
+}
+
+
+
+
+
+I have replaced led with buzzer but didn't worked well also don't know how to get emergency message on my cellphone??
+

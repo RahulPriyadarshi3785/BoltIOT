@@ -1,0 +1,57 @@
+
+
+ /*
+var temp = 0;
+ setChartLibrary('google-chart');
+setChartTitle('Phla Scatter graph');
+setChartType('steppedGraph');
+setAxisName('time','Light_intensity','temp');
+plotChart('time_stamp','light_intensity','temp');
+*/
+
+/*  setChartLibrary('google-chart');
+setChartTitle('Phla graph');
+
+//setChartType('barGraph');
+//setChartType('scatterGraph');
+//setChartType('lineGraph');
+
+setAxisName('time','Light_intensity');
+setAnimation(true);
+setCrosshair(true);
+plotChart('time_stamp','light_intensity');
+*/
+
+/*
+ setChartLibrary('google-chart');
+setChartTitle('Phla Scatter graph');
+setChartType('steppedGraph');
+setAxisName('time','Light_intensity');
+plotChart('time_stamp','light_intensity');
+*/
+
+
+/*
+setChartLibrary('google-chart');
+setChartTitle('Phla Gauge');
+setChartType('gauge'); 
+setAxisName('Light_intensity'); 
+setDimensions(400,400);
+setMaxValue(1023);
+setYellow(501,725);
+setRed(726,1023);
+setGreen(250,500);
+plotChart('light_intensity');
+*/
+
+/*
+setChartLibrary('google-chart');
+var lineGraph1 = new boltGraph();
+lineGraph1.setChartType("lineGraph");
+lineGraph1.setAxisName('time','Light_intensity');
+lineGraph1.plotChart('time_stamp','light_intensity');
+var scatterGraph = new boltGraph();
+scatterGraph.setChartType("lineGraph");
+scatterGraph.setAxisName('time','Light_intensity');
+scatterGraph.plotChart('time_stamp','light_intensity');
+*/
